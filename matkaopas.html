@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
-    <title>Matkaopas Pro - Live-tapahtumat</title>
+    <title>Matkaopas Pro - Korjattu Tapahtumahaku</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root { --primary: #007bff; --success: #28a745; --warning: #f39c12; --bg: #f8f9fa; --dark: #2c3e50; }
@@ -20,9 +20,9 @@
 
         .tapahtuma-rivi { border-bottom: 1px solid rgba(255,255,255,0.2); padding: 8px 0; font-size: 0.8em; }
         .tapahtuma-rivi:last-child { border: none; }
-        .tapahtuma-linkki { color: #ffeb3b; text-decoration: none; font-weight: bold; }
+        .tapahtuma-linkki { color: #ffeb3b; text-decoration: none; font-weight: bold; border-bottom: 1px dashed; }
 
-        #map { height: 400px; width: 100%; border-radius: 12px; margin-bottom: 20px; z-index: 1; }
+        #map { height: 400px; width: 100%; border-radius: 12px; margin-bottom: 20px; z-index: 1; border: 1px solid #ddd; }
         .gps-nappi { position: absolute; top: 10px; right: 10px; z-index: 1000; background: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
         .kohde-kortti { background: white; border-radius: 12px; padding: 20px; display: flex; gap: 20px; align-items: flex-start; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
@@ -46,7 +46,7 @@
         <select id="citySelect" onchange="vaihdaKaupunki()">
             <option value="vilna">🇱🇹 Vilna</option>
             <option value="praha">🇨🇿 Praha</option>
-            <option value="rooma">🇮🇹 Rooma</option>
+            <option value="rooma" selected>🇮🇹 Rooma</option>
             <option value="pori">🇫🇮 Pori</option>
         </select>
     </div>
@@ -59,8 +59,8 @@
         </div>
 
         <div id="tapahtuma-osio" class="kortti tapahtuma-kortti">
-            <div style="font-weight: bold; font-size: 0.9em; margin-bottom: 5px;">Tapahtumat (7 pv)</div>
-            <div id="tapahtuma-lista">Ladataan tapahtumia...</div>
+            <div style="font-weight: bold; font-size: 0.9em; margin-bottom: 5px;">Tapahtumat (Lähiaikoina)</div>
+            <div id="tapahtuma-lista">Haetaan tapahtumia...</div>
         </div>
     </div>
 
@@ -83,31 +83,30 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const cityConfig = {
-            vilna: { json: 'vilna_locations.json', lat: 54.6872, lon: 25.2797, name: 'Vilnius', storageKey: 'kaytyVilna', primary: '#007bff' },
-            praha: { json: 'prague_locations.json', lat: 50.0875, lon: 14.4214, name: 'Prague', storageKey: 'kaytyPrague', primary: '#d32f2f' },
-            rooma: { json: 'rome_locations.json', lat: 41.8902, lon: 12.4922, name: 'Rome', storageKey: 'kaytyRooma', primary: '#c0392b' },
-            pori: { json: 'pori_locations.json', lat: 61.4851, lon: 21.7911, name: 'Pori', storageKey: 'kaytyPori', primary: '#ff6600', eventUrl: 'https://tapahtumat.pori.fi' }
+            vilna: { json: 'vilna_locations.json', lat: 54.6872, lon: 25.2797, name: 'Vilnius', countryCode: 'LT', storageKey: 'kaytyVilna', primary: '#007bff' },
+            praha: { json: 'prague_locations.json', lat: 50.0875, lon: 14.4214, name: 'Prague', countryCode: 'CZ', storageKey: 'kaytyPrague', primary: '#d32f2f' },
+            rooma: { json: 'rome_locations.json', lat: 41.8902, lon: 12.4922, name: 'Rome', countryCode: 'IT', storageKey: 'kaytyRooma', primary: '#c0392b' },
+            pori: { json: 'pori_locations.json', lat: 61.4851, lon: 21.7911, name: 'Pori', countryCode: 'FI', storageKey: 'kaytyPori', primary: '#ff6600', eventUrl: 'https://tapahtumat.pori.fi' }
         };
 
-        let nykyinenKaupunki = 'vilna';
+        let nykyinenKaupunki = 'rooma';
         let kaikkiKohteet = [];
         let userLat = null, userLon = null;
         let map, markerGroup, userMarker;
 
-        // --- TAPAHTUMIEN HAKU (Ticketmaster API) ---
         async function haeTapahtumat() {
             const config = cityConfig[nykyinenKaupunki];
             const listaDiv = document.getElementById('tapahtuma-lista');
             
             if (nykyinenKaupunki === 'pori') {
-                listaDiv.innerHTML = `<p>Ticketmaster ei kata Poria hyvin.</p><a href="${config.eventUrl}" target="_blank" class="tapahtuma-linkki">Avaa Porin tapahtumakalenteri →</a>`;
+                listaDiv.innerHTML = `<a href="${config.eventUrl}" target="_blank" class="tapahtuma-linkki">Avaa Porin tapahtumakalenteri →</a>`;
                 return;
             }
 
             try {
-                // API-AVAIN (Vaihda tämä omaasi jos haluat: developer.ticketmaster.com)
+                // Huom: Tämä on jaettu demoavain. Jos se lakkaa toimimasta, hanki oma developer.ticketmaster.com
                 const apiKey = '7elSST36dpA97vM2B94WvH2X8U5Wp3x9'; 
-                const url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${apiKey}&city=${config.name}&size=5&sort=date,asc`;
+                const url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${apiKey}&city=${config.name}&countryCode=${config.countryCode}&size=8&sort=date,asc`;
                 
                 const res = await fetch(url);
                 const data = await res.json();
@@ -115,22 +114,22 @@
                 if (data._embedded && data._embedded.events) {
                     let html = '';
                     data._embedded.events.forEach(ev => {
-                        const pvm = new Date(ev.dates.start.localDate).toLocaleDateString('fi-FI', {day:'numeric', month:'numeric'});
+                        const date = ev.dates.start.localDate ? new Date(ev.dates.start.localDate).toLocaleDateString('fi-FI') : 'Aika avoin';
                         html += `<div class="tapahtuma-rivi">
-                                    <b>${pvm}</b>: ${ev.name.substring(0, 30)}... 
-                                    <a href="${ev.url}" target="_blank" class="tapahtuma-linkki">Liput</a>
+                                    <b>${date}</b>: ${ev.name.substring(0, 35)}${ev.name.length > 35 ? '...' : ''} 
+                                    <br><a href="${ev.url}" target="_blank" class="tapahtuma-linkki">Katso tiedot ja liput</a>
                                  </div>`;
                     });
                     listaDiv.innerHTML = html;
                 } else {
-                    listaDiv.innerHTML = "Ei löytynyt lähiajan tapahtumia.";
+                    listaDiv.innerHTML = "Ei löytynyt tulevia suuria tapahtumia tällä haulla.";
                 }
             } catch (e) {
-                listaDiv.innerHTML = "Tapahtumien lataus epäonnistui.";
+                console.error("Ticketmaster Error:", e);
+                listaDiv.innerHTML = "Tapahtumien lataus ei juuri nyt onnistunut (API-rajoitus).";
             }
         }
 
-        // --- PERUSTOIMINNOT ---
         function alustaKartta() {
             if (map) map.remove();
             const config = cityConfig[nykyinenKaupunki];
@@ -148,17 +147,21 @@
             haeSaa();
             haeTapahtumat();
             
-            const res = await fetch(config.json);
-            kaikkiKohteet = await res.json();
-            suodata();
+            try {
+                const res = await fetch(config.json);
+                kaikkiKohteet = await res.json();
+                suodata();
+            } catch (e) { console.error("JSON load error:", e); }
         }
 
         async function haeSaa() {
             const config = cityConfig[nykyinenKaupunki];
-            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current_weather=true`);
-            const data = await res.json();
-            document.getElementById('nyky-temp').textContent = `${Math.round(data.current_weather.temperature)}°C`;
-            document.getElementById('nyky-kuvaus').textContent = config.name;
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current_weather=true`);
+                const data = await res.json();
+                document.getElementById('nyky-temp').textContent = `${Math.round(data.current_weather.temperature)}°C`;
+                document.getElementById('nyky-kuvaus').textContent = config.name;
+            } catch(e) {}
         }
 
         function haeOmaSijainti() {
