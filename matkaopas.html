@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yleismatkaopas - Vilna & Praha</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --warning: #f39c12;
+            --bg: #f8f9fa;
+            --dark: #2c3e50;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; max-width: 900px; margin: 20px auto; padding: 0 20px; background-color: var(--bg); color: #333; }
+        
+        /* Kaupungin valinta */
+        .kaupunki-valitsin {
+            background: var(--dark);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .kaupunki-valitsin select {
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Sääosio */
+        .saa-sailyty {
+            background: linear-gradient(135deg, var(--primary), #00c6ff);
+            color: white; padding: 20px; border-radius: 12px; margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+        }
+        .saa-nykyinen { display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.3); margin-bottom: 10px; }
+        .saa-ennuste { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .ennuste-paiva { background: rgba(255,255,255,0.1); padding: 8px; border-radius: 8px; text-align: center; font-size: 0.85em; }
+
+        /* Kartta */
+        .kartta-sailyty { position: relative; margin-bottom: 25px; }
+        #map { height: 400px; width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1; }
+        .gps-nappi {
+            position: absolute; top: 10px; right: 10px; z-index: 1000;
+            background: white; border: 2px solid rgba(0,0,0,0.2); border-radius: 4px;
+            padding: 8px 12px; cursor: pointer; font-weight: bold;
+        }
+
+        /* Haku */
+        .haku-alue { 
+            background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; 
+            display: flex; gap: 10px; flex-wrap: wrap; box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+        }
+        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; flex-grow: 1; }
+
+        /* Kohdekortit */
+        .kohde-kortti { 
+            background: white; border-radius: 12px; padding: 20px; display: flex; gap: 20px; 
+            align-items: flex-start; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .kayty { background-color: #e8f5e9 !important; border: 1px solid #a5d6a7; }
+        .kohde-kuva { width: 110px; height: 110px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: #eee; }
+        .kohde-sisalto { flex-grow: 1; }
+        .nimi { font-weight: bold; font-size: 1.2em; color: var(--primary); }
+        .kuvaus { font-size: 0.85em; color: #444; font-style: italic; margin: 8px 0; border-left: 3px solid var(--primary); padding-left: 10px; line-height: 1.4; }
+
+        /* Napit */
+        .nappi-ryhma { display: flex; flex-direction: column; gap: 8px; min-width: 130px; }
+        .nappi { cursor: pointer; padding: 10px; border: none; border-radius: 6px; font-size: 0.85em; text-align: center; text-decoration: none; font-weight: bold; display: block; }
+        .nappi-sivu { background: #6c757d; color: white; }
+        .nappi-kartta { background: var(--primary); color: white; }
+        .nappi-kayty { background: white; border: 1px solid #ccc; color: #555; }
+        .nappi-kayty.aktiivinen { background: var(--success); color: white; border-color: var(--success); }
+
+        @media (max-width: 650px) {
+            .kohde-kortti { flex-direction: column; }
+            .saa-ennuste { grid-template-columns: 1fr; }
+            .nappi-ryhma { width: 100%; flex-direction: row; flex-wrap: wrap; }
+            .nappi { flex: 1; min-width: 100px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="kaupunki-valitsin">
+        <div id="otsikko" style="font-weight: bold; font-size: 1.2em;">🌍 Valitse kohde:</div>
+        <select id="citySelect" onchange="vaihdaKaupunki()">
+            <option value="vilna">🇱🇹 Vilna, Liettua</option>
+            <option value="praha">🇨🇿 Praha, Tšekki</option>
+        </select>
+    </div>
+
+    <div id="saa-osio" class="saa-sailyty">
+        <div class="saa-nykyinen">
+            <div><div id="saa-kaupunki" style="font-weight: bold;">Ladataan...</div><div id="nyky-kuvaus">--</div></div>
+            <div id="nyky-ikoni" style="font-size: 3em;">☁️</div>
+            <div id="nyky-temp" style="font-size: 2.2em; font-weight: bold;">--°C</div>
+        </div>
+        <div id="ennuste-rivit" class="saa-ennuste"></div>
+    </div>
+
+    <div class="kartta-sailyty">
+        <div id="map"></div>
+        <button class="gps-nappi" onclick="haeOmaSijainti()">📍 Missä olen?</button>
+    </div>
+
+    <div class="haku-alue">
+        <input type="text" id="hakukentta" placeholder="Etsi kohdetta..." oninput="suodata()">
+        <select id="kategoriaSuodatin" onchange="suodata()">
+            <option value="kaikki">Kaikki kategoriat</option>
+            <option value="Suosittu nähtävyys">Suosituimmat</option>
+            <option value="Nähtävyys">Nähtävyydet</option>
+            <option value="Museo">Museot</option>
+            <option value="Ravintola">Ravintolat</option>
+            <option value="Suosittu kahvila">Kahvilat</option>
+        </select>
+        <span id="laskuri" style="font-weight: bold; color: var(--primary);"></span>
+    </div>
+
+    <div id="lista"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Kaupunkien asetukset
+        const cityConfig = {
+            vilna: {
+                json: 'vilna_locations.json',
+                lat: 54.6872,
+                lon: 25.2797,
+                storageKey: 'kaytyVilna',
+                name: 'Vilna',
+                color: 'linear-gradient(135deg, #007bff, #00c6ff)'
+            },
+            praha: {
+                json: 'prague_locations.json',
+                lat: 50.0875,
+                lon: 14.4214,
+                storageKey: 'kaytyPrague',
+                name: 'Praha',
+                color: 'linear-gradient(135deg, #d32f2f, #ff6659)'
+            }
+        };
+
+        let nykyinenKaupunki = 'vilna';
+        let kaikkiKohteet = [];
+        let map, markerGroup, userMarker;
+
+        const saaKuvaukset = {
+            0: ["Selkeää", "☀️"], 1: ["Melkein selkeää", "🌤️"], 2: ["Puolipilvistä", "⛅"], 3: ["Pilvistä", "☁️"],
+            45: ["Sumua", "🌫️"], 51: ["Tihkua", "🌧️"], 61: ["Vesisadetta", "🌧️"], 71: ["Lunta", "❄️"], 95: ["Ukkosta", "⛈️"]
+        };
+
+        // --- ALUSTUS ---
+        function alustaKartta() {
+            if (map) map.remove();
+            const config = cityConfig[nykyinenKaupunki];
+            map = L.map('map').setView([config.lat, config.lon], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            markerGroup = L.layerGroup().addTo(map);
+        }
+
+        async function vaihdaKaupunki() {
+            nykyinenKaupunki = document.getElementById('citySelect').value;
+            const config = cityConfig[nykyinenKaupunki];
+            
+            // Päivitä UI värit
+            document.getElementById('saa-osio').style.background = config.color;
+            document.documentElement.style.setProperty('--primary', nykyinenKaupunki === 'praha' ? '#d32f2f' : '#007bff');
+            
+            alustaKartta();
+            haeSaa();
+            
+            const res = await fetch(config.json);
+            kaikkiKohteet = await res.json();
+            suodata();
+        }
+
+        // --- SÄÄ ---
+        async function haeSaa() {
+            const config = cityConfig[nykyinenKaupunki];
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Europe%2FBerlin`);
+                const data = await res.json();
+                const nyky = data.current_weather;
+                
+                document.getElementById('saa-kaupunki').textContent = config.name + " Nyt";
+                document.getElementById('nyky-temp').textContent = `${Math.round(nyky.temperature)}°C`;
+                document.getElementById('nyky-kuvaus').textContent = (saaKuvaukset[nyky.weathercode] || ["Vaihtelevaa"])[0];
+                document.getElementById('nyky-ikoni').textContent = (saaKuvaukset[nyky.weathercode] || ["", "⛅"])[1];
+
+                const ennusteElementti = document.getElementById('ennuste-rivit');
+                ennusteElementti.innerHTML = '';
+                for (let i = 1; i <= 3; i++) {
+                    const d = data.daily;
+                    ennusteElementti.innerHTML += `
+                        <div class="ennuste-paiva">
+                            <b>${new Date(d.time[i]).toLocaleDateString('fi-FI', {weekday:'short'})}</b><br>
+                            ${saaKuvaukset[d.weathercode[i]][1]}<br>
+                            ${Math.round(d.temperature_2m_max[i])}° / ${Math.round(d.temperature_2m_min[i])}°
+                        </div>`;
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        // --- GPS ---
+        function haeOmaSijainti() {
+            if (!navigator.geolocation) return alert("Ei GPS-tukea.");
+            navigator.geolocation.getCurrentPosition((pos) => {
+                const { latitude: lat, longitude: lon } = pos.coords;
+                if (userMarker) map.removeLayer(userMarker);
+                userMarker = L.circleMarker([lat, lon], { radius: 10, fillColor: "#007bff", color: "white", weight: 3, fillOpacity: 0.8 }).addTo(map);
+                map.setView([lat, lon], 15);
+            });
+        }
+
+        // --- LISTA JA HAKU ---
+        function naytaKohteet(kohteet) {
+            const lista = document.getElementById('lista');
+            lista.innerHTML = '';
+            const config = cityConfig[nykyinenKaupunki];
+            const kaytyLista = JSON.parse(localStorage.getItem(config.storageKey)) || [];
+
+            kohteet.forEach(item => {
+                const onKayty = kaytyLista.includes(item.kohde);
+                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`;
+                const tahdet = '★'.repeat(item.tähdet) + '☆'.repeat(5 - item.tähdet);
+
+                lista.innerHTML += `
+                    <div class="kohde-kortti ${onKayty ? 'kayty' : ''}">
+                        <img src="${item.kuva}" class="kohde-kuva" onerror="this.src='https://placehold.co/120x120?text=Ei+kuvaa'">
+                        <div class="kohde-sisalto">
+                            <div style="font-size: 0.7em; text-transform: uppercase; color: #999; font-weight: bold;">${item.kategoria}</div>
+                            <div class="nimi">${item.kohde}</div>
+                            <div style="color:var(--warning); font-size:0.9em;">${tahdet}</div>
+                            <div class="kuvaus">${item.kuvaus || ''}</div>
+                            <div style="font-weight: bold; color: var(--success); font-size: 0.9em;">${item.hinta === 0 ? 'Ilmainen' : item.hinta + ' €'}</div>
+                        </div>
+                        <div class="nappi-ryhma">
+                            <a href="${item.linkki}" target="_blank" class="nappi nappi-sivu">🔗 Sivu</a>
+                            <a href="${mapsUrl}" target="_blank" class="nappi nappi-kartta">🌐 Kartta</a>
+                            <button class="nappi nappi-kayty ${onKayty ? 'aktiivinen' : ''}" onclick="toggleKayty('${item.kohde}')">
+                                ${onKayty ? '✓ Käyty' : 'Merkitse'}
+                            </button>
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('laskuri').textContent = `Löytyi: ${kohteet.length}`;
+            
+            // Päivitä kartan pinnit
+            markerGroup.clearLayers();
+            kohteet.forEach(item => {
+                const mUrl = `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`;
+                L.marker([item.lat, item.lon]).bindPopup(`<b>${item.kohde}</b><br><a href="${mUrl}" target="_blank">Reittiohjeet</a>`).addTo(markerGroup);
+            });
+        }
+
+        function suodata() {
+            const haku = document.getElementById('hakukentta').value.toLowerCase();
+            const kat = document.getElementById('kategoriaSuodatin').value;
+            const suodatetut = kaikkiKohteet.filter(i => 
+                (i.kohde.toLowerCase().includes(haku) || i.kategoria.toLowerCase().includes(haku)) && 
+                (kat === 'kaikki' || i.kategoria === kat)
+            );
+            naytaKohteet(suodatetut);
+        }
+
+        function toggleKayty(id) {
+            const config = cityConfig[nykyinenKaupunki];
+            let kaytyLista = JSON.parse(localStorage.getItem(config.storageKey)) || [];
+            const idx = kaytyLista.indexOf(id);
+            if (idx > -1) kaytyLista.splice(idx, 1); else kaytyLista.push(id);
+            localStorage.setItem(config.storageKey, JSON.stringify(kaytyLista));
+            suodata();
+        }
+
+        // Käynnistys
+        vaihdaKaupunki();
+    </script>
+</body>
+</html>
