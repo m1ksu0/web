@@ -3,30 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kohde-haku & Muistio</title>
+    <title>Kohde-haku, Muistio & Kartta</title>
     <style>
         body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 20px auto; padding: 0 20px; color: #333; }
         h2 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
         
-        .haku-alue { background: #f0f4f8; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .haku-alue { background: #f0f4f8; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
         input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         
         .kohde-kortti { 
             border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 10px; 
             display: flex; justify-content: space-between; align-items: center;
+            gap: 15px;
         }
         .kayty { background-color: #e8f5e9; border-color: #a5d6a7; }
         .nimi { font-weight: bold; font-size: 1.1em; color: #007bff; }
         .hinta { color: #28a745; font-weight: bold; }
         .tahdet { color: #f39c12; }
         
-        button.nappi { cursor: pointer; padding: 8px 12px; border: none; border-radius: 4px; background: #6c757d; color: white; }
-        button.nappi.aktiivinen { background: #28a745; }
+        .nappi-ryhma { display: flex; gap: 8px; flex-shrink: 0; }
+        
+        button.nappi { cursor: pointer; padding: 8px 12px; border: none; border-radius: 4px; font-size: 0.9em; transition: 0.2s; }
+        
+        .nappi-kayty { background: #6c757d; color: white; }
+        .nappi-kayty.aktiivinen { background: #28a745; }
+        
+        .nappi-kartta { background: #4285F4; color: white; text-decoration: none; padding: 8px 12px; border-radius: 4px; font-size: 0.9em; }
+        .nappi-kartta:hover { background: #357ae8; }
     </style>
 </head>
 <body>
 
-    <h2>📍 Matkakohteet & Muistio</h2>
+    <h2>📍 Matkakohteet, Muistio & Kartta</h2>
 
     <div class="haku-alue">
         <input type="text" id="hakukentta" placeholder="Etsi kaupunkia tai kohdetta..." oninput="suodata()">
@@ -41,7 +49,6 @@
 
     <script>
         let kaikkiKohteet = [];
-        // Haetaan käydyt kohteet selaimen muistista (LocalStorage)
         let kaytyLista = JSON.parse(localStorage.getItem('kaytyKohteet')) || [];
 
         fetch('kohteet.json')
@@ -55,22 +62,29 @@
             const lista = document.getElementById('lista');
             lista.innerHTML = '';
             
-            kohteet.forEach((item, index) => {
-                const onKayty = kaytyLista.includes(item.nimi + item.kohde);
+            kohteet.forEach((item) => {
+                const tunniste = item.nimi + item.kohde;
+                const onKayty = kaytyLista.includes(tunniste);
                 const li = document.createElement('li');
                 li.className = `kohde-kortti ${onKayty ? 'kayty' : ''}`;
 
                 const hintaTeksti = item.hinta === 0 ? 'Ilmainen' : item.hinta + ' €';
                 const tahdetVisual = '★'.repeat(item.tähdet) + '☆'.repeat(5 - item.tähdet);
+                
+                // Google Maps -linkki koordinaateilla
+                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`;
 
                 li.innerHTML = `
                     <div>
                         <div class="nimi">${item.nimi}: ${item.kohde}</div>
                         <div><span class="hinta">${hintaTeksti}</span> | <span class="tahdet">${tahdetVisual}</span></div>
                     </div>
-                    <button class="nappi ${onKayty ? 'aktiivinen' : ''}" onclick="merkitseKaydyksi('${item.nimi + item.kohde}', this)">
-                        ${onKayty ? '✓ Käyty' : 'Merkitse käydyksi'}
-                    </button>
+                    <div class="nappi-ryhma">
+                        <a href="${mapsUrl}" target="_blank" class="nappi-kartta">🌐 Kartta</a>
+                        <button class="nappi nappi-kayty ${onKayty ? 'aktiivinen' : ''}" onclick="merkitseKaydyksi('${tunniste}', this)">
+                            ${onKayty ? '✓ Käyty' : 'Merkitse käydyksi'}
+                        </button>
+                    </div>
                 `;
                 lista.appendChild(li);
             });
@@ -91,12 +105,12 @@
 
         function merkitseKaydyksi(id, nappi) {
             if (kaytyLista.includes(id)) {
-                kaytyLista = kaytyLista.filter(i => i !== id); // Poista merkintä
+                kaytyLista = kaytyLista.filter(i => i !== id);
             } else {
-                kaytyLista.push(id); // Lisää merkintä
+                kaytyLista.push(id);
             }
             localStorage.setItem('kaytyKohteet', JSON.stringify(kaytyLista));
-            suodata(); // Päivitä listan värit
+            suodata(); 
         }
     </script>
 </body>
