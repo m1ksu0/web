@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vilna - Kohdeopas & 3 Päivän Sää</title>
+    <title>Vilna - Kohdeopas, Sää & Linkit</title>
     <style>
         :root {
             --primary: #007bff;
             --success: #28a745;
             --warning: #f39c12;
             --bg: #f8f9fa;
-            --white: #ffffff;
         }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; max-width: 900px; margin: 20px auto; padding: 0 20px; background-color: var(--bg); color: #333; }
         h2 { border-bottom: 3px solid var(--primary); padding-bottom: 10px; color: #2c3e50; margin-bottom: 15px; }
@@ -47,7 +46,7 @@
         .lampotila-iso { font-size: 2.2em; font-weight: bold; }
         .paiva-nimi { font-weight: bold; text-transform: capitalize; margin-bottom: 5px; }
 
-        /* Lista ja haku */
+        /* Haku ja Lista */
         .haku-alue { background: white; padding: 15px; border-radius: 12px; margin-bottom: 25px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; flex-grow: 1; }
         
@@ -57,17 +56,31 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         .kayty { background-color: #e8f5e9 !important; border: 1px solid #a5d6a7; }
-        .kohde-kuva { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: #eee; }
-        .kohde-sisalto { flex-grow: 1; }
-        .nimi { font-weight: bold; font-size: 1.1em; color: var(--primary); }
         
-        .nappi { cursor: pointer; padding: 8px 12px; border: none; border-radius: 6px; font-size: 0.85em; text-align: center; text-decoration: none; font-weight: bold; display: inline-block; }
-        .nappi-linkki { background: #6c757d; color: white; }
-        .nappi-kayty.aktiivinen { background: var(--success); color: white; }
+        .kohde-kuva { width: 110px; height: 110px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: #eee; }
+        
+        .kohde-sisalto { flex-grow: 1; }
+        .nimi { font-weight: bold; font-size: 1.15em; color: var(--primary); margin-bottom: 5px; }
+        .tahdet { color: var(--warning); font-size: 0.9em; }
+
+        /* Nappien asettelu */
+        .nappi-ryhma { display: flex; flex-direction: column; gap: 6px; min-width: 120px; }
+        .nappi { 
+            cursor: pointer; padding: 8px 10px; border: none; border-radius: 6px; 
+            font-size: 0.8em; text-align: center; text-decoration: none; 
+            font-weight: bold; transition: 0.2s; display: block;
+        }
+        .nappi-sivu { background: #6c757d; color: white; }
+        .nappi-kartta { background: var(--primary); color: white; }
+        .nappi-kayty { background: white; border: 1px solid #ccc; color: #555; }
+        .nappi-kayty.aktiivinen { background: var(--success); color: white; border-color: var(--success); }
 
         @media (max-width: 600px) {
             .kohde-kortti { flex-direction: column; text-align: center; }
+            .kohde-kuva { width: 100%; height: 150px; }
             .saa-ennuste { grid-template-columns: 1fr; }
+            .nappi-ryhma { width: 100%; flex-direction: row; flex-wrap: wrap; }
+            .nappi { flex: 1; min-width: 80px; }
         }
     </style>
 </head>
@@ -84,8 +97,7 @@
             <div id="nyky-ikoni" style="font-size: 3em;">☁️</div>
             <div id="nyky-temp" class="lampotila-iso">--°C</div>
         </div>
-        <div id="ennuste-rivit" class="saa-ennuste">
-            </div>
+        <div id="ennuste-rivit" class="saa-ennuste"></div>
     </div>
 
     <div class="haku-alue">
@@ -93,10 +105,13 @@
         <select id="kategoriaSuodatin" onchange="suodata()">
             <option value="kaikki">Kaikki tyypit</option>
             <option value="Suosittu nähtävyys">Suositut</option>
+            <option value="Nähtävyys">Nähtävyydet</option>
             <option value="Ravintola">Ravintolat</option>
             <option value="Museo">Museot</option>
+            <option value="Suosittu kahvila">Kahvilat</option>
+            <option value="Kauppakeskus">Kauppakeskukset</option>
         </select>
-        <span id="laskuri"></span>
+        <span id="laskuri" style="font-weight: bold; color: var(--primary);"></span>
     </div>
 
     <div id="lista"></div>
@@ -116,16 +131,13 @@
                 const res = await fetch(url);
                 const data = await res.json();
 
-                // Nykyinen sää
                 const nyky = data.current_weather;
                 document.getElementById('nyky-temp').textContent = `${Math.round(nyky.temperature)}°C`;
                 document.getElementById('nyky-kuvaus').textContent = (saaKuvaukset[nyky.weathercode] || ["Vaihtelevaa"])[0];
                 document.getElementById('nyky-ikoni').textContent = (saaKuvaukset[nyky.weathercode] || ["", "⛅"])[1];
 
-                // 3 päivän ennuste (alkaa huomisesta = indeksi 1)
                 const ennusteElementti = document.getElementById('ennuste-rivit');
                 ennusteElementti.innerHTML = '';
-                
                 for (let i = 1; i <= 3; i++) {
                     const pvm = new Date(data.daily.time[i]);
                     const paivaNimi = pvm.toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'numeric' });
@@ -133,14 +145,12 @@
                     const maxT = Math.round(data.daily.temperature_2m_max[i]);
                     const minT = Math.round(data.daily.temperature_2m_min[i]);
                     const kuva = saaKuvaukset[koodi] || ["Sataa", "🌦️"];
-
                     ennusteElementti.innerHTML += `
                         <div class="ennuste-paiva">
                             <div class="paiva-nimi">${paivaNimi}</div>
                             <div style="font-size: 1.5em;">${kuva[1]}</div>
                             <div>${maxT}° / ${minT}°</div>
-                        </div>
-                    `;
+                        </div>`;
                 }
             } catch (e) { console.error("Säävirhe", e); }
         }
@@ -159,20 +169,28 @@
             kohteet.forEach(item => {
                 const id = item.kohde;
                 const onKayty = kaytyLista.includes(id);
+                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`;
+                const tahdetVisual = '★'.repeat(item.tähdet) + '☆'.repeat(5 - item.tähdet);
+
                 lista.innerHTML += `
                     <div class="kohde-kortti ${onKayty ? 'kayty' : ''}">
                         <img src="${item.kuva}" class="kohde-kuva" onerror="this.src='https://placehold.co/100x100?text=Ei+kuvaa'">
                         <div class="kohde-sisalto">
+                            <div style="font-size: 0.75em; text-transform: uppercase; color: #888;">${item.kategoria}</div>
                             <div class="nimi">${item.kohde}</div>
-                            <div style="font-size:0.85em; color:#666">${item.kategoria}</div>
+                            <div class="tahdet">${tahdetVisual}</div>
+                            <div style="font-weight: bold; color: var(--success); font-size: 0.9em;">${item.hinta === 0 ? 'Ilmainen' : item.hinta + ' €'}</div>
                         </div>
-                        <button class="nappi nappi-kayty ${onKayty ? 'aktiivinen' : ''}" onclick="toggleKayty('${id}')">
-                            ${onKayty ? '✓ Käyty' : 'Merkitse'}
-                        </button>
-                    </div>
-                `;
+                        <div class="nappi-ryhma">
+                            <a href="${item.linkki}" target="_blank" class="nappi nappi-sivu">🔗 Sivu</a>
+                            <a href="${mapsUrl}" target="_blank" class="nappi nappi-kartta">🌐 Kartta</a>
+                            <button class="nappi nappi-kayty ${onKayty ? 'aktiivinen' : ''}" onclick="toggleKayty('${id}')">
+                                ${onKayty ? '✓ Käyty' : 'Merkitse'}
+                            </button>
+                        </div>
+                    </div>`;
             });
-            document.getElementById('laskuri').textContent = `Yhteensä: ${kohteet.length}`;
+            document.getElementById('laskuri').textContent = `Löytyi: ${kohteet.length}`;
         }
 
         function suodata() {
