@@ -95,6 +95,7 @@
         <select id="citySelect" onchange="vaihdaKaupunki()">
             <option value="vilna">🇱🇹 Vilna, Liettua</option>
             <option value="praha">🇨🇿 Praha, Tšekki</option>
+            <option value="rooma">🇮🇹 Rooma, Italia</option>
         </select>
     </div>
 
@@ -138,6 +139,14 @@
                 storageKey: 'kaytyVilna',
                 name: 'Vilna',
                 color: 'linear-gradient(135deg, #007bff, #00c6ff)'
+            },
+            rooma: {
+                json: 'rome_locations.json',
+                lat: 41.8902,
+                lon: 12.4922,
+                storageKey: 'kaytyRooma',
+                name: 'Rooma',
+                color: 'linear-gradient(135deg, #e5a01a, #c0392b)' // Rooman kulta ja punainen
             },
             praha: {
                 json: 'prague_locations.json',
