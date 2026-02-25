@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <h2>Kohteet "tietokannasta"</h2>
+  <ul id="lista"></ul>
+
+  <script>
+    // Haetaan data JSON-tiedostosta
+    fetch('kohteet.json')
+      .then(response => response.json())
+      .then(data => {
+        const lista = document.getElementById('lista');
+        data.forEach(kohde => {
+          let li = document.createElement('li');
+          li.textContent = `${kohde.nimi}: (${kohde.lat}, ${kohde.lon})`;
+          lista.appendChild(li);
+        });
+      })
+      .catch(error => console.error('Virhe haettaessa dataa:', error));
+  </script>
+</body>
+</html>
