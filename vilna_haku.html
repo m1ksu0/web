@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vilna - Kohdeopas</title>
+    <style>
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --warning: #f39c12;
+            --bg: #f8f9fa;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; max-width: 900px; margin: 20px auto; padding: 0 20px; background-color: var(--bg); color: #333; }
+        h2 { border-bottom: 3px solid var(--primary); padding-bottom: 10px; color: #2c3e50; }
+        
+        .haku-alue { background: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; flex-grow: 1; }
+        
+        .lista-container { display: flex; flex-direction: column; gap: 15px; }
+        
+        .kohde-kortti { 
+            background: white; border-radius: 12px; padding: 15px; 
+            display: flex; gap: 20px; align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s;
+        }
+        .kohde-kortti:hover { transform: scale(1.01); }
+        .kayty { background-color: #e8f5e9; border: 1px solid #a5d6a7; }
+        
+        .kohde-kuva { width: 120px; height: 120px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+        
+        .kohde-sisalto { flex-grow: 1; }
+        .nimi { font-weight: bold; font-size: 1.2em; color: var(--primary); margin-bottom: 4px; }
+        .kategoria-tagi { display: inline-block; background: #eee; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; margin-bottom: 8px; }
+        .hinta { color: var(--success); font-weight: bold; }
+        .tahdet { color: var(--warning); }
+        
+        .nappi-ryhma { display: flex; flex-direction: column; gap: 8px; min-width: 130px; }
+        
+        .nappi { cursor: pointer; padding: 8px 12px; border: none; border-radius: 6px; font-size: 0.85em; text-align: center; text-decoration: none; font-weight: bold; transition: 0.2s; }
+        .nappi-linkki { background: #6c757d; color: white; }
+        .nappi-kartta { background: var(--primary); color: white; }
+        .nappi-kayty { background: white; border: 1px solid #ccc; color: #555; }
+        .nappi-kayty.aktiivinen { background: var(--success); color: white; border-color: var(--success); }
+
+        @media (max-width: 600px) {
+            .kohde-kortti { flex-direction: column; align-items: flex-start; }
+            .kohde-kuva { width: 100%; height: 180px; }
+            .nappi-ryhma { width: 100%; flex-direction: row; }
+            .nappi { flex: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <h2>🇱🇹 Vilna - Matkakohdeopas</h2>
+
+    <div class="haku-alue">
+        <input type="text" id="hakukentta" placeholder="Hae kohteita..." oninput="suodata()">
+        <select id="kategoriaSuodatin" onchange="suodata()">
+            <option value="kaikki">Kaikki kategoriat</option>
+            <option value="Suosittu nähtävyys">Suositut nähtävyydet</option>
+            <option value="Nähtävyys">Muut nähtävyydet</option>
+            <option value="Museo">Museot</option>
+            <option value="Ravintola">Ravintolat</option>
+            <option value="Suosittu kahvila">Kahvilat</option>
+            <option value="Kauppakeskus">Kauppakeskukset</option>
+        </select>
+        <span id="laskuri" style="font-weight: bold; color: var(--primary);"></span>
+    </div>
+
+    <div id="lista" class="lista-container"></div>
+
+    <script>
+        let kaikkiKohteet = [];
+        let kaytyLista = JSON.parse(localStorage.getItem('kaytyVilna')) || [];
+
+        // Haetaan data vilna_locations.json tiedostosta
+        fetch('vilna_locations.json')
+            .then(res => {
+                if (!res.ok) throw new Error("JSON-tiedostoa ei löytynyt!");
+                return res.json();
+            })
+            .then(data => {
+                kaikkiKohteet = data;
+                naytaKohteet(kaikkiKohteet);
+            })
+            .catch(err => {
+                document.getElementById('lista').innerHTML = `<p style="color:red">Virhe: ${err.message}</p>`;
+            });
+
+        function naytaKohteet(kohteet) {
+            const listaElementti = document.getElementById('lista');
+            listaElementti.innerHTML = '';
+            
+            kohteet.forEach((item) => {
+                const tunniste = item.nimi + "_" + item.kohde;
+                const onKayty = kaytyLista.includes(tunniste);
+                
+                const kortti = document.createElement('div');
+                kortti.className = `kohde-kortti ${onKayty ? 'kayty' : ''}`;
+
+                const hintaTeksti = item.hinta === 0 ? 'Ilmainen' : item.hinta + ' €';
+                const tahdetVisual = '★'.repeat(item.tähdet) + '☆'.repeat(5 - item.tähdet);
+                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`;
+
+                kortti.innerHTML = `
+                    <img src="${item.kuva}" alt="${item.kohde}" class="kohde-kuva">
+                    <div class="kohde-sisalto">
+                        <div class="kategoria-tagi">${item.kategoria}</div>
+                        <div class="nimi">${item.kohde}</div>
+                        <div>Pääsy/Hinta: <span class="hinta">${hintaTeksti}</span></div>
+                        <div class="tahdet">${tahdetVisual} <span style="color:#666; font-size: 0.9em;">(${item.tähdet}/5)</span></div>
+                    </div>
+                    <div class="nappi-ryhma">
+                        <a href="${item.linkki}" target="_blank" class="nappi nappi-linkki">🔗 Verkkosivu</a>
+                        <a href="${mapsUrl}" target="_blank" class="nappi nappi-kartta">🌐 Kartta</a>
+                        <button class="nappi nappi-kayty ${onKayty ? 'aktiivinen' : ''}" onclick="merkitseKaydyksi('${tunniste}', this)">
+                            ${onKayty ? '✓ Käyty' : 'Merkitse käyty'}
+                        </button>
+                    </div>
+                `;
+                listaElementti.appendChild(kortti);
+            });
+            document.getElementById('laskuri').textContent = `Löytyi: ${kohteet.length}`;
+        }
+
+        function suodata() {
+            const hakusana = document.getElementById('hakukentta').value.toLowerCase();
+            const kategoriaValinta = document.getElementById('kategoriaSuodatin').value;
+
+            const suodatetut = kaikkiKohteet.filter(item => {
+                const täsmääHaku = item.kohde.toLowerCase().includes(hakusana) || item.kategoria.toLowerCase().includes(hakusana);
+                const täsmääKategoria = kategoriaValinta === 'kaikki' || item.kategoria === kategoriaValinta;
+                return täsmääHaku && täsmääKategoria;
+            });
+            naytaKohteet(suodatetut);
+        }
+
+        function merkitseKaydyksi(id, nappi) {
+            if (kaytyLista.includes(id)) {
+                kaytyLista = kaytyLista.filter(i => i !== id);
+                nappi.classList.remove('aktiivinen');
+                nappi.textContent = 'Merkitse käyty';
+                nappi.closest('.kohde-kortti').classList.remove('kayty');
+            } else {
+                kaytyLista.push(id);
+                nappi.classList.add('aktiivinen');
+                nappi.textContent = '✓ Käyty';
+                nappi.closest('.kohde-kortti').classList.add('kayty');
+            }
+            localStorage.setItem('kaytyVilna', JSON.stringify(kaytyLista));
+        }
+    </script>
+</body>
+</html>
