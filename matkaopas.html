@@ -23,12 +23,11 @@
         }
         .kaupunki-valitsin select { padding: 10px 15px; border-radius: 6px; font-size: 1em; font-weight: bold; cursor: pointer; border: none; }
 
-        .saa-sailyty {
-            background: linear-gradient(135deg, var(--primary), #00c6ff);
-            color: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,123,255,0.3);
-        }
-        .saa-nykyinen { display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.3); margin-bottom: 10px; }
-        .saa-ennuste { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
+        /* Info-grid sääälle ja tapahtumille */
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .kortti { padding: 15px; border-radius: 12px; color: white; min-height: 100px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .saa-kortti { background: linear-gradient(135deg, var(--primary), #00c6ff); }
+        .tapahtuma-kortti { background: linear-gradient(135deg, #6f42c1, #a951ed); overflow-y: auto; max-height: 200px; }
 
         .kartta-sailyty { position: relative; margin-bottom: 25px; }
         #map { height: 450px; width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1; }
@@ -60,6 +59,7 @@
         .nappi-kayty.aktiivinen { background: var(--success); color: white; border-color: var(--success); }
 
         @media (max-width: 650px) {
+            .info-grid { grid-template-columns: 1fr; }
             .kohde-kortti { flex-direction: column; }
             .nappi-ryhma { width: 100%; flex-direction: row; flex-wrap: wrap; }
             .nappi { flex: 1; min-width: 110px; }
@@ -80,13 +80,17 @@
         </select>
     </div>
 
-    <div id="saa-osio" class="saa-sailyty">
-        <div class="saa-nykyinen">
-            <div><div id="saa-kaupunki" style="font-weight: bold; font-size: 1.2em;">Ladataan...</div><div id="nyky-kuvaus">--</div></div>
-            <div id="nyky-ikoni" style="font-size: 3.5em;">☁️</div>
-            <div id="nyky-temp" style="font-size: 2.5em; font-weight: bold;">--°C</div>
+    <div class="info-grid">
+        <div id="saa-osio" class="kortti saa-kortti">
+            <div style="font-weight: bold; font-size: 0.9em; margin-bottom: 5px;">Sää</div>
+            <div id="nyky-temp" style="font-size: 2em; font-weight: bold;">--°C</div>
+            <div id="nyky-kuvaus">Ladataan...</div>
         </div>
-        <div id="ennuste-rivit" class="saa-ennuste"></div>
+
+        <div id="tapahtuma-osio" class="kortti tapahtuma-kortti">
+            <div style="font-weight: bold; font-size: 0.9em; margin-bottom: 5px;">Tulevat tapahtumat</div>
+            <div id="tapahtuma-lista" style="font-size: 0.8em;">Haetaan tapahtumia...</div>
+        </div>
     </div>
 
     <div class="kartta-sailyty">
@@ -113,12 +117,12 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const cityConfig = {
-            vilna: { json: 'vilna_locations.json', lat: 54.6872, lon: 25.2797, storageKey: 'kaytyVilna', name: 'Vilna', color: 'linear-gradient(135deg, #007bff, #00c6ff)', primary: '#007bff' },
-            praha: { json: 'prague_locations.json', lat: 50.0875, lon: 14.4214, storageKey: 'kaytyPrague', name: 'Praha', color: 'linear-gradient(135deg, #d32f2f, #ff6659)', primary: '#d32f2f' },
-            munchen: { json: 'munich_locations.json', lat: 48.137, lon: 11.575, storageKey: 'kaytyMunchen', name: 'Munich', color: 'linear-gradient(135deg, #00adef, #005aab)', primary: '#005aab'}
-            rooma: { json: 'rome_locations.json', lat: 41.8902, lon: 12.4922, storageKey: 'kaytyRooma', name: 'Rooma', color: 'linear-gradient(135deg, #e5a01a, #c0392b)', primary: '#c0392b' },
-            gdansk: { json: 'gdansk_locations.json', lat: 54.352, lon: 18.646, storageKey: 'kaytyGdansk', name: 'Gdansk', color: 'linear-gradient(135deg, #dc143c, #8b0000)',primary: '#dc143c'},
-            pori: { json: 'pori_locations.json', lat: 61.4851, lon: 21.7911, storageKey: 'kaytyPori', name: 'Pori', color: 'linear-gradient(135deg, #ffcc00, #ff6600)', primary: '#ff6600' }
+            vilna: { json: 'vilna_locations.json', lat: 54.6872, lon: 25.2797, name: 'Vilnius', countryCode: 'LT', storageKey: 'kaytyVilna', primary: '#007bff' },
+            praha: { json: 'prague_locations.json', lat: 50.0875, lon: 14.4214, name: 'Prague', countryCode: 'CZ', storageKey: 'kaytyPrague', primary: '#d32f2f' },
+            munchen: { json: 'munich_locations.json', lat: 48.137, lon: 11.575, name: 'Munich', countryCode: 'DE', storageKey: 'kaytyMunchen', primary: '#005aab' },
+            rooma: { json: 'rome_locations.json', lat: 41.8902, lon: 12.4922, name: 'Rome', countryCode: 'IT', storageKey: 'kaytyRooma', primary: '#c0392b' },
+            gdansk: { json: 'gdansk_locations.json', lat: 54.352, lon: 18.646, name: 'Gdansk', countryCode: 'PL', storageKey: 'kaytyGdansk', primary: '#dc143c' },
+            pori: { json: 'pori_locations.json', lat: 61.4851, lon: 21.7911, name: 'Pori', countryCode: 'FI', storageKey: 'kaytyPori', primary: '#ff6600', eventUrl: 'https://tapahtumat.pori.fi' }
         };
 
         let nykyinenKaupunki = 'vilna';
@@ -126,35 +130,29 @@
         let userLat = null, userLon = null;
         let map, markerGroup, userMarker;
 
-        const saaKuvaukset = {
-            0: ["Selkeää", "☀️"], 1: ["Melkein selkeää", "🌤️"], 2: ["Puolipilvistä", "⛅"], 3: ["Pilvistä", "☁️"],
-            45: ["Sumua", "🌫️"], 51: ["Tihkua", "🌧️"], 61: ["Vesisadetta", "🌧️"], 71: ["Lunta", "❄️"], 95: ["Ukkosta", "⛈️"]
-        };
-
         function laskeEtaisyys(lat1, lon1, lat2, lon2) {
             const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
         function alustaKartta() {
             if (map) map.remove();
             const config = cityConfig[nykyinenKaupunki];
-            map = L.map('map').setView([config.lat, config.lon], 14);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+            map = L.map('map').setView([config.lat, config.lon], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
             markerGroup = L.layerGroup().addTo(map);
         }
 
         async function vaihdaKaupunki() {
             nykyinenKaupunki = document.getElementById('citySelect').value;
             const config = cityConfig[nykyinenKaupunki];
-            document.getElementById('saa-osio').style.background = config.color;
             document.documentElement.style.setProperty('--primary', config.primary);
             alustaKartta();
             haeSaa();
+            haeTapahtumat();
             try {
                 const res = await fetch(config.json);
                 kaikkiKohteet = await res.json();
@@ -162,11 +160,31 @@
             } catch (e) { console.error("Latausvirhe:", e); }
         }
 
+        async function haeTapahtumat() {
+            const config = cityConfig[nykyinenKaupunki];
+            const listaDiv = document.getElementById('tapahtuma-lista');
+            if (nykyinenKaupunki === 'pori') {
+                listaDiv.innerHTML = `<a href="${config.eventUrl}" target="_blank" style="color:white;">Avaa Porin kalenteri →</a>`;
+                return;
+            }
+            try {
+                const apiKey = '7elSST36dpA97vM2B94WvH2X8U5Wp3x9';
+                const url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${apiKey}&city=${config.name}&countryCode=${config.countryCode}&size=5&sort=date,asc`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data._embedded) {
+                    let html = '';
+                    data._embedded.events.forEach(ev => {
+                        html += `<div>• ${ev.name.substring(0,25)}... <a href="${ev.url}" target="_blank" style="color:#ffeb3b;">Info</a></div>`;
+                    });
+                    listaDiv.innerHTML = html;
+                } else { listaDiv.innerHTML = "Ei suuria tapahtumia tällä viikolla."; }
+            } catch (e) { listaDiv.innerHTML = "Tapahtumien haku ei onnistunut."; }
+        }
+
         function haeOmaSijainti() {
-            if (!navigator.geolocation) return alert("Ei GPS-tukea.");
             navigator.geolocation.getCurrentPosition((pos) => {
-                userLat = pos.coords.latitude;
-                userLon = pos.coords.longitude;
+                userLat = pos.coords.latitude; userLon = pos.coords.longitude;
                 if (userMarker) map.removeLayer(userMarker);
                 userMarker = L.circleMarker([userLat, userLon], { radius: 10, fillColor: "#007bff", color: "white", weight: 3, fillOpacity: 0.8 }).addTo(map);
                 map.setView([userLat, userLon], 15);
@@ -186,77 +204,54 @@
             }
 
             markerGroup.clearLayers();
-
             kohteet.forEach(item => {
                 const onKayty = kaytyLista.includes(item.kohde);
+                // KORJATTU URL syntaksi: lisätty dollarimerkki latitudin eteen
                 const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`;
                 const distText = item.dist ? `<div class="etaisyys-tagi">📍 ${item.dist.toFixed(1)} km päässä</div>` : '';
 
                 lista.innerHTML += `
                     <div class="kohde-kortti ${onKayty ? 'kayty' : ''}">
-                        <img src="${item.kuva}" class="kohde-kuva" onerror="this.src='https://placehold.co/120x120?text=Ei+kuvaa'">
+                        <img src="${item.kuva}" class="kohde-kuva" onerror="this.src='https://via.placeholder.com/120'">
                         <div class="kohde-sisalto">
                             ${distText}
                             <div style="font-size: 0.7em; text-transform: uppercase; color: #999; font-weight: bold;">${item.kategoria}</div>
-                            <div class="nimi">${item.kohde}</div>
-                            <div class="kuvaus">${item.kuvaus || ''}</div>
-                            <div style="font-weight: bold; color: var(--success); font-size: 0.9em;">${item.hinta === 0 ? 'Ilmainen' : item.hinta + ' €'}</div>
+                            <div style="font-weight:bold; color:var(--primary);">${item.kohde}</div>
+                            <div style="font-size:0.85em;">${item.kuvaus || ''}</div>
                         </div>
                         <div class="nappi-ryhma">
-                            <a href="${item.linkki}" target="_blank" class="nappi nappi-sivu">🔗 Sivu</a>
                             <a href="${mapsUrl}" target="_blank" class="nappi nappi-kartta">🌐 Kartta</a>
-                            <button class="nappi nappi-kayty ${onKayty ? 'aktiivinen' : ''}" onclick="toggleKayty('${item.kohde}')">
+                            <button class="nappi ${onKayty ? 'aktiivinen' : ''}" onclick="toggleKayty('${item.kohde}')">
                                 ${onKayty ? '✓ Käyty' : 'Merkitse'}
                             </button>
                         </div>
                     </div>`;
 
-                L.marker([item.lat, item.lon]).addTo(markerGroup).bindPopup(`
-                    <div style="text-align:center; min-width:150px;">
-                        <b style="color:var(--primary);">${item.kohde}</b><br>
-                        <small>${item.kategoria}</small><br>
-                        <a href="${mapsUrl}" target="_blank" style="display:inline-block; margin-top:8px; padding:6px 10px; background:var(--primary); color:white; text-decoration:none; border-radius:4px; font-size:11px; font-weight:bold;">🌐 Reittiohjeet</a>
-                    </div>
-                `);
+                L.marker([item.lat, item.lon]).addTo(markerGroup).bindPopup(`<b>${item.kohde}</b><br><a href="${mapsUrl}" target="_blank">Reittiohjeet</a>`);
             });
             document.getElementById('laskuri').textContent = `Löytyi: ${kohteet.length}`;
         }
 
         function suodata() {
             const haku = document.getElementById('hakukentta').value.toLowerCase();
-            const kat = document.getElementById('kategoriaSuodatin').value;
-            const suodatetut = kaikkiKohteet.filter(i => 
-                (i.kohde.toLowerCase().includes(haku) || (i.kategoria && i.kategoria.toLowerCase().includes(haku))) && (kat === 'kaikki' || i.kategoria === kat)
-            );
-            naytaKohteet(suodatetut);
+            const s = kaikkiKohteet.filter(i => i.kohde.toLowerCase().includes(haku));
+            naytaKohteet(s);
         }
 
         async function haeSaa() {
             const config = cityConfig[nykyinenKaupunki];
-            try {
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Europe%2FBerlin`);
-                const data = await res.json();
-                const nyky = data.current_weather;
-                document.getElementById('saa-kaupunki').textContent = config.name + " Nyt";
-                document.getElementById('nyky-temp').textContent = `${Math.round(nyky.temperature)}°C`;
-                document.getElementById('nyky-kuvaus').textContent = (saaKuvaukset[nyky.weathercode] || ["Vaihtelevaa"])[0];
-                document.getElementById('nyky-ikoni').textContent = (saaKuvaukset[nyky.weathercode] || ["", "⛅"])[1];
-
-                const ennusteElementti = document.getElementById('ennuste-rivit');
-                ennusteElementti.innerHTML = '';
-                for (let i = 1; i <= 3; i++) {
-                    const d = data.daily;
-                    ennusteElementti.innerHTML += `<div class="ennuste-paiva"><b>${new Date(d.time[i]).toLocaleDateString('fi-FI', {weekday:'short'})}</b><br>${saaKuvaukset[d.weathercode[i]][1]}<br>${Math.round(d.temperature_2m_max[i])}° / ${Math.round(d.temperature_2m_min[i])}°</div>`;
-                }
-            } catch (e) {}
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current_weather=true`);
+            const data = await res.json();
+            document.getElementById('nyky-temp').textContent = `${Math.round(data.current_weather.temperature)}°C`;
+            document.getElementById('nyky-kuvaus').textContent = config.name;
         }
 
         function toggleKayty(id) {
             const config = cityConfig[nykyinenKaupunki];
-            let kaytyLista = JSON.parse(localStorage.getItem(config.storageKey)) || [];
-            const idx = kaytyLista.indexOf(id);
-            if (idx > -1) kaytyLista.splice(idx, 1); else kaytyLista.push(id);
-            localStorage.setItem(config.storageKey, JSON.stringify(kaytyLista));
+            let list = JSON.parse(localStorage.getItem(config.storageKey)) || [];
+            const idx = list.indexOf(id);
+            if (idx > -1) list.splice(idx, 1); else list.push(id);
+            localStorage.setItem(config.storageKey, JSON.stringify(list));
             suodata();
         }
 
