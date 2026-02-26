@@ -195,7 +195,7 @@
 
             kohteet.forEach(item => {
                 const onKayty = kaytyLista.includes(item.kohde);
-                // KORJATTU URL ja Syntaksi
+                // KORJATTU URL ja Syntaksi (käytetään backtickejä `` muuttujille)
                 const mapsUrl = `https://www.google.com/maps?q=${item.lat},${item.lon}`;
                 const distText = item.dist ? `<div class="etaisyys-tagi">📍 ${item.dist.toFixed(1)} km päässä</div>` : '';
 
