@@ -117,10 +117,7 @@
             praha: { json: 'prague_locations.json', lat: 50.0875, lon: 14.4214, storageKey: 'kaytyPrague', name: 'Praha', color: 'linear-gradient(135deg, #d32f2f, #ff6659)', primary: '#d32f2f' },
             munchen: { json: 'munich_locations.json', lat: 48.137, lon: 11.575, storageKey: 'kaytyMunchen', name: 'Munich', color: 'linear-gradient(135deg, #00adef, #005aab)', primary: '#005aab' },
             rooma: { json: 'rome_locations.json', lat: 41.8902, lon: 12.4922, storageKey: 'kaytyRooma', name: 'Rooma', color: 'linear-gradient(135deg, #e5a01a, #c0392b)', primary: '#c0392b' },
-            gdansk: { 
-                json: 'gdansk_locations.json', lat: 54.352, lon: 18.646, storageKey: 'kaytyGdansk', name: 'Gdansk', 
-                color: 'linear-gradient(135deg, #dc143c, #8b0000)', primary: '#dc143c' 
-            },
+            gdansk: { json: 'gdansk_locations.json', lat: 54.352, lon: 18.646, storageKey: 'kaytyGdansk', name: 'Gdansk', color: 'linear-gradient(135deg, #dc143c, #8b0000)', primary: '#dc143c' },
             pori: { json: 'pori_locations.json', lat: 61.4851, lon: 21.7911, storageKey: 'kaytyPori', name: 'Pori', color: 'linear-gradient(135deg, #ffcc00, #ff6600)', primary: '#ff6600' }
         };
 
@@ -165,32 +162,6 @@
             } catch (e) { console.error("Latausvirhe:", e); }
         }
 
-        async function haeSaa() {
-            const config = cityConfig[nykyinenKaupunki];
-            try {
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Europe%2FBerlin`);
-                const data = await res.json();
-                const nyky = data.current_weather;
-                
-                document.getElementById('saa-kaupunki').textContent = config.name + " Nyt";
-                document.getElementById('nyky-temp').textContent = `${Math.round(nyky.temperature)}°C`;
-                document.getElementById('nyky-kuvaus').textContent = (saaKuvaukset[nyky.weathercode] || ["Vaihtelevaa"])[0];
-                document.getElementById('nyky-ikoni').textContent = (saaKuvaukset[nyky.weathercode] || ["", "⛅"])[1];
-
-                const ennusteElementti = document.getElementById('ennuste-rivit');
-                ennusteElementti.innerHTML = '';
-                for (let i = 1; i <= 3; i++) {
-                    const d = data.daily;
-                    ennusteElementti.innerHTML += `
-                        <div class="ennuste-paiva">
-                            <b>${new Date(d.time[i]).toLocaleDateString('fi-FI', {weekday:'short'})}</b><br>
-                            ${saaKuvaukset[d.weathercode[i]][1]}<br>
-                            ${Math.round(d.temperature_2m_max[i])}° / ${Math.round(d.temperature_2m_min[i])}°
-                        </div>`;
-                }
-            } catch (e) {}
-        }
-
         function haeOmaSijainti() {
             if (!navigator.geolocation) return alert("Ei GPS-tukea.");
             navigator.geolocation.getCurrentPosition((pos) => {
@@ -215,21 +186,24 @@
             }
 
             markerGroup.clearLayers();
+
             kohteet.forEach(item => {
                 const onKayty = kaytyLista.includes(item.kohde);
-                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`;
+                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=$${item.lat},${item.lon}`;
                 const distText = item.dist ? `<div class="etaisyys-tagi">📍 ${item.dist.toFixed(1)} km päässä</div>` : '';
 
                 lista.innerHTML += `
                     <div class="kohde-kortti ${onKayty ? 'kayty' : ''}">
-                        <img src="${item.kuva}" class="kohde-kuva" onerror="this.src='https://via.placeholder.com/120'">
+                        <img src="${item.kuva}" class="kohde-kuva" onerror="this.src='https://placehold.co/120x120?text=Ei+kuvaa'">
                         <div class="kohde-sisalto">
                             ${distText}
                             <div style="font-size: 0.7em; text-transform: uppercase; color: #999; font-weight: bold;">${item.kategoria}</div>
                             <div style="font-weight:bold; color:var(--primary); font-size: 1.2em;">${item.kohde}</div>
                             <div style="font-size:0.85em; margin: 5px 0;">${item.kuvaus || ''}</div>
+                            <div style="font-weight: bold; color: var(--success); font-size: 0.9em;">${item.hinta === 0 ? 'Ilmainen' : item.hinta + ' €'}</div>
                         </div>
                         <div class="nappi-ryhma">
+                            <a href="${item.linkki}" target="_blank" class="nappi" style="background:#6c757d; color:white;">🔗 Sivu</a>
                             <a href="${mapsUrl}" target="_blank" class="nappi nappi-kartta">🌐 Kartta</a>
                             <button class="nappi nappi-kayty ${onKayty ? 'aktiivinen' : ''}" onclick="toggleKayty('${item.kohde}')">
                                 ${onKayty ? '✓ Käyty' : 'Merkitse'}
@@ -237,10 +211,15 @@
                         </div>
                     </div>`;
 
+                // KARTAN PINNI TYYLIKKÄÄLLÄ POPUP-PAINIKKEELLA
                 L.marker([item.lat, item.lon]).addTo(markerGroup).bindPopup(`
-                    <div style="text-align:center;">
-                        <b>${item.kohde}</b><br>
-                        <a href="${mapsUrl}" target="_blank">Avaa reittiohjeet</a>
+                    <div style="text-align:center; min-width:160px;">
+                        <b style="color:var(--primary); font-size: 1.1em;">${item.kohde}</b><br>
+                        <span style="font-size: 0.85em; color: #666;">${item.kategoria}</span><br>
+                        <a href="${mapsUrl}" target="_blank" 
+                           style="display:inline-block; margin-top:10px; padding:6px 12px; background:var(--primary); color:white; text-decoration:none; border-radius:4px; font-size:11px; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                           🌐 Reittiohjeet (Maps)
+                        </a>
                     </div>
                 `);
             });
@@ -256,12 +235,32 @@
             naytaKohteet(suodatetut);
         }
 
+        async function haeSaa() {
+            const config = cityConfig[nykyinenKaupunki];
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Europe%2FBerlin`);
+                const data = await res.json();
+                const nyky = data.current_weather;
+                document.getElementById('saa-kaupunki').textContent = config.name + " Nyt";
+                document.getElementById('nyky-temp').textContent = `${Math.round(nyky.temperature)}°C`;
+                document.getElementById('nyky-kuvaus').textContent = (saaKuvaukset[nyky.weathercode] || ["Vaihtelevaa"])[0];
+                document.getElementById('nyky-ikoni').textContent = (saaKuvaukset[nyky.weathercode] || ["", "⛅"])[1];
+
+                const ennusteElementti = document.getElementById('ennuste-rivit');
+                ennusteElementti.innerHTML = '';
+                for (let i = 1; i <= 3; i++) {
+                    const d = data.daily;
+                    ennusteElementti.innerHTML += `<div class="ennuste-paiva"><b>${new Date(d.time[i]).toLocaleDateString('fi-FI', {weekday:'short'})}</b><br>${saaKuvaukset[d.weathercode[i]][1]}<br>${Math.round(d.temperature_2m_max[i])}° / ${Math.round(d.temperature_2m_min[i])}°</div>`;
+                }
+            } catch (e) {}
+        }
+
         function toggleKayty(id) {
             const config = cityConfig[nykyinenKaupunki];
-            let list = JSON.parse(localStorage.getItem(config.storageKey)) || [];
-            const idx = list.indexOf(id);
-            if (idx > -1) list.splice(idx, 1); else list.push(id);
-            localStorage.setItem(config.storageKey, JSON.stringify(list));
+            let kaytyLista = JSON.parse(localStorage.getItem(config.storageKey)) || [];
+            const idx = kaytyLista.indexOf(id);
+            if (idx > -1) kaytyLista.splice(idx, 1); else kaytyLista.push(id);
+            localStorage.setItem(config.storageKey, JSON.stringify(kaytyLista));
             suodata();
         }
 
