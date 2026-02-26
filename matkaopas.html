@@ -115,7 +115,15 @@
             vilna: { json: 'vilna_locations.json', lat: 54.6872, lon: 25.2797, storageKey: 'kaytyVilna', name: 'Vilna', color: 'linear-gradient(135deg, #007bff, #00c6ff)', primary: '#007bff' },
             praha: { json: 'prague_locations.json', lat: 50.0875, lon: 14.4214, storageKey: 'kaytyPrague', name: 'Praha', color: 'linear-gradient(135deg, #d32f2f, #ff6659)', primary: '#d32f2f' },
             rooma: { json: 'rome_locations.json', lat: 41.8902, lon: 12.4922, storageKey: 'kaytyRooma', name: 'Rooma', color: 'linear-gradient(135deg, #e5a01a, #c0392b)', primary: '#c0392b' },
-            gdansk: {json: 'gdansk_locations.json',lat: 54.352,lon: 18.646,storageKey: 'kaytyGdansk',name: 'Gdansk',color: 'linear-gradient(135deg, #dc143c, #8b0000)', // Puolan punainen    primary: '#dc143c'},
+            gdansk: { 
+                json: 'gdansk_locations.json', 
+                lat: 54.352, 
+                lon: 18.646, 
+                storageKey: 'kaytyGdansk', 
+                name: 'Gdansk', 
+                color: 'linear-gradient(135deg, #dc143c, #8b0000)', 
+                primary: '#dc143c' 
+            },
             pori: { json: 'pori_locations.json', lat: 61.4851, lon: 21.7911, storageKey: 'kaytyPori', name: 'Pori', color: 'linear-gradient(135deg, #ffcc00, #ff6600)', primary: '#ff6600' }
         };
 
@@ -187,8 +195,8 @@
 
             kohteet.forEach(item => {
                 const onKayty = kaytyLista.includes(item.kohde);
-                // KORJATTU URL: Käytetään standardia Google Maps hakua
-                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`;
+                // KORJATTU URL ja Syntaksi
+                const mapsUrl = `https://www.google.com/maps?q=${item.lat},${item.lon}`;
                 const distText = item.dist ? `<div class="etaisyys-tagi">📍 ${item.dist.toFixed(1)} km päässä</div>` : '';
 
                 lista.innerHTML += `
@@ -210,7 +218,6 @@
                         </div>
                     </div>`;
 
-                // KARTAN PINNI JA TOIMIVA LINKKI
                 L.marker([item.lat, item.lon]).addTo(markerGroup).bindPopup(`
                     <div style="text-align:center; min-width:150px;">
                         <b style="color:var(--primary);">${item.kohde}</b><br>
@@ -226,7 +233,7 @@
             const haku = document.getElementById('hakukentta').value.toLowerCase();
             const kat = document.getElementById('kategoriaSuodatin').value;
             const suodatetut = kaikkiKohteet.filter(i => 
-                (i.kohde.toLowerCase().includes(haku) || i.kategoria.toLowerCase().includes(haku)) && (kat === 'kaikki' || i.kategoria === kat)
+                (i.kohde.toLowerCase().includes(haku) || (i.kategoria && i.kategoria.toLowerCase().includes(haku))) && (kat === 'kaikki' || i.kategoria === kat)
             );
             naytaKohteet(suodatetut);
         }
