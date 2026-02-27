@@ -7,7 +7,7 @@
     "tähdet": 5,
     "lat": 45.0689,
     "lon": 7.6931,
-    "kuva": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Mole_Antonelliana_Torino.jpg/800px-Mole_Antonelliana_Torino.jpg",
+    "kuva": "https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/4/4d/Mole_Antonelliana_Torino.jpg&w=400",
     "linkki": "https://www.museocinema.it/en",
     "kuvaus": "Torinon ikoninen maamerkki ja elokuvamuseo. Lasihissi vie huipulle."
   },
@@ -19,9 +19,9 @@
     "tähdet": 5,
     "lat": 45.0684,
     "lon": 7.6840,
-    "kuva": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Egizio01.jpg/800px-Egizio01.jpg",
+    "kuva": "https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/d/d1/Egizio01.jpg&w=400",
     "linkki": "https://museoegizio.it/en/",
-    "kuvaus": "Maailman tärkeimpiä egyptiläisiä museoita Kairon ulkopuolella."
+    "kuvaus": "Maailman toiseksi suurin egyptiläinen museo heti Kairon jälkeen."
   },
   {
     "nimi": "Torino",
@@ -31,7 +31,7 @@
     "tähdet": 5,
     "lat": 45.0727,
     "lon": 7.6860,
-    "kuva": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Palazzo_Reale_Torino_da_piazza_Castello.jpg/800px-Palazzo_Reale_Torino_da_piazza_Castello.jpg",
+    "kuva": "https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/1/1a/Palazzo_Reale_Torino_da_piazza_Castello.jpg&w=400",
     "linkki": "https://museireali.beniculturali.it/en/",
     "kuvaus": "Kuningaslinna ja upeat kuninkaalliset puutarhat."
   },
@@ -43,7 +43,7 @@
     "tähdet": 5,
     "lat": 45.0670,
     "lon": 7.6830,
-    "kuva": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Torino_Piazza_San_Carlo.jpg/800px-Torino_Piazza_San_Carlo.jpg",
+    "kuva": "https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/6/6f/Torino_Piazza_San_Carlo.jpg&w=400",
     "linkki": "https://www.turismotorino.org/",
     "kuvaus": "Kaupungin hienostunein aukio, jota reunustavat historialliset kahvilat."
   },
@@ -55,7 +55,7 @@
     "tähdet": 5,
     "lat": 45.0808,
     "lon": 7.7675,
-    "kuva": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Superga_Turin.jpg/800px-Superga_Turin.jpg",
+    "kuva": "https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/e/e0/Superga_Turin.jpg&w=400",
     "linkki": "http://www.basilicadisuperga.com/",
     "kuvaus": "Kukkulalla sijaitseva kirkko, josta on upeat näkymät kaupunkiin ja Alpeille."
   },
@@ -67,7 +67,7 @@
     "tähdet": 5,
     "lat": 45.0560,
     "lon": 7.6840,
-    "kuva": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Castello_del_Valentino_-_Torino.jpg/800px-Castello_del_Valentino_-_Torino.jpg",
+    "kuva": "https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/0/05/Castello_del_Valentino_-_Torino.jpg&w=400",
     "linkki": "https://www.comune.torino.it/",
     "kuvaus": "Vihreä keidas Po-joen rannalla. Sisältää keskiaikaisen kylän."
   },
@@ -79,7 +79,7 @@
     "tähdet": 5,
     "lat": 45.1095,
     "lon": 7.6412,
-    "kuva": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Juventus_Stadium_April_2017.jpg/800px-Juventus_Stadium_April_2017.jpg",
+    "kuva": "https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/2/25/Juventus_Stadium_April_2017.jpg&w=400",
     "linkki": "https://www.juventus.com/",
     "kuvaus": "Juventuksen kotiareena ja museo. Pakollinen jalkapallofaneille."
   },
@@ -91,31 +91,8 @@
     "tähdet": 4,
     "lat": 45.0320,
     "lon": 7.6740,
-    "kuva": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Automobile_Museum_of_Turin.jpg/800px-Automobile_Museum_of_Turin.jpg",
+    "kuva": "https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/1/15/Automobile_Museum_of_Turin.jpg&w=400",
     "linkki": "https://www.museoauto.it/",
     "kuvaus": "Laaja kokoelma historiallisia autoja futuristisessa rakennuksessa."
-  },
-  {
-    "nimi": "Torino",
-    "kohde": "Venaria Reale",
-    "kategoria": "Nähtävyys",
-    "hinta": 20,
-    "tähdet": 5,
-    "lat": 45.1360,
-    "lon": 7.6250,
-    "kuva": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Venaria_reale_-_galleria_grande.jpg/800px-Venaria_reale_-_galleria_grande.jpg",
-    "linkki": "https://lavenaria.it/en",
-    "kuvaus": "Valtava barokkipalatsi aivan kaupungin ulkopuolella."
-  },
-  {
-    "nimi": "Torino",
-    "kohde": "Porta Palatina",
-    "kategoria": "Nähtävyys",
-    "hinta": 0,
-    "tähdet": 4,
-    "lat": 45.0745,
-    "lon": 7.6850,
-    "kuva": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Torino_Porta_Palatina_01.jpg/800px-Torino_Porta_Palatina_01.jpg",
-    "kuvaus": "Rooman vallan aikainen portti, yksi parhaiten säilyneistä maailmassa."
   }
 ]
